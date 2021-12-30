@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"strings"
 
-	"github.com/yuyuan-huang/go-dirtyfilter"
+	"github.com/yuyuan-huang/go-dirtyfilter/v2"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )

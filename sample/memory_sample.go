@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/yuyuan-huang/go-dirtyfilter"
-	"github.com/yuyuan-huang/go-dirtyfilter/store"
+	"github.com/yuyuan-huang/go-dirtyfilter/v2"
+	"github.com/yuyuan-huang/go-dirtyfilter/v2/store"
 )
 
 var (

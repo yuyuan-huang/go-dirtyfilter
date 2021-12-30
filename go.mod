@@ -1,4 +1,4 @@
-module github.com/yuyuan-huang/go-dirtyfilter
+module github.com/yuyuan-huang/go-dirtyfilter/v2
 
 go 1.15
 

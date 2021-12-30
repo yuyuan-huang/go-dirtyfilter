@@ -5,7 +5,7 @@ import (
 	"io"
 	"sync/atomic"
 
-	"github.com/yuyuan-huang/go-dirtyfilter/cmap"
+	"github.com/yuyuan-huang/go-dirtyfilter/v2/cmap"
 )
 
 const (
