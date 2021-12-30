@@ -11,7 +11,7 @@ const (
 )
 
 // NewDirtyManager 使用敏感词存储接口创建敏感词管理的实例
-func NewDirtyManager(store DirtyStore, checkInterval ...time.Duration) *DirtyManager {
+func NewDirtyManager(store DirtyStore, intrusion map[rune]bool, checkInterval ...time.Duration) *DirtyManager {
 	interval := DefaultCheckInterval
 	if len(checkInterval) > 0 {
 		interval = checkInterval[0]
@@ -19,14 +19,13 @@ func NewDirtyManager(store DirtyStore, checkInterval ...time.Duration) *DirtyMan
 	manage := &DirtyManager{
 		store:    store,
 		version:  store.Version(),
-		filter:   NewNodeChanFilter(store.Read()),
+		filter:   NewNodeChanFilter(store.Read(), intrusion),
 		interval: interval,
+		intrusion:intrusion,
 	}
-	if (interval != -1) {
-		go func() {
-			manage.checkVersion()
-		}()
-	}
+	go func() {
+		manage.checkVersion()
+	}()
 	return manage
 }
 
@@ -37,6 +36,7 @@ type DirtyManager struct {
 	filterMux sync.RWMutex
 	version   uint64
 	interval  time.Duration
+	intrusion  map[rune]bool
 }
 
 func (dm *DirtyManager) checkVersion() {
@@ -44,7 +44,7 @@ func (dm *DirtyManager) checkVersion() {
 		storeVersion := dm.store.Version()
 		if dm.version < storeVersion {
 			dm.filterMux.Lock()
-			dm.filter = NewNodeChanFilter(dm.store.Read())
+			dm.filter = NewNodeChanFilter(dm.store.Read(), dm.intrusion)
 			dm.filterMux.Unlock()
 			dm.version = storeVersion
 		}

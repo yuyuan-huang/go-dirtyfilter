@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/antlinker/go-dirtyfilter"
-	"github.com/antlinker/go-dirtyfilter/store"
+	"github.com/yuyuan-huang/go-dirtyfilter"
+	"github.com/yuyuan-huang/go-dirtyfilter/store"
 )
 
 var (

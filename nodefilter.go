@@ -33,13 +33,16 @@ func NewNodeReaderFilter(rd io.Reader, delim byte) DirtyFilter {
 
 // NewNodeChanFilter 创建节点过滤器，实现敏感词的过滤
 // 从通道中读取敏感词数据
-func NewNodeChanFilter(text <-chan string) DirtyFilter {
+func NewNodeChanFilter(text <-chan string, intrusion map[rune]bool) DirtyFilter {
 	nf := &nodeFilter{
 		root: newNode(),
 	}
 	for v := range text {
 		nf.addDirtyWords(v)
 	}
+
+	// 添加去除干扰map
+	nf.intrusion = intrusion
 	return nf
 }
 
@@ -68,6 +71,7 @@ type node struct {
 
 type nodeFilter struct {
 	root *node
+	intrusion map[rune]bool
 }
 
 func (nf *nodeFilter) addDirtyWords(text string) {
@@ -139,9 +143,9 @@ func (nf *nodeFilter) FilterReaderResult(reader io.Reader, excludes ...rune) (ma
 	return data, nil
 }
 
-func (nf *nodeFilter) Replace(text string, delim rune, excludes ...rune) (string, error) {
+func (nf *nodeFilter) Replace(text string, delim rune) (string, error) {
 	uchars := []rune(text)
-	idexs := nf.doIndexes(uchars, excludes...)
+	idexs := nf.doIndexes(uchars, nf.intrusion)
 	if len(idexs) == 0 {
 		return "", nil
 	}
@@ -201,38 +205,40 @@ func (nf *nodeFilter) doFilter(uchars []rune, data map[string]int) {
 	}
 }
 
-func (nf *nodeFilter) doIndexes(uchars []rune, excludes ...rune) (idexs []int) {
+func (nf *nodeFilter) doIndexes(uchars []rune, intrusion map[rune]bool) (idexs []int) {
 	var (
 		tIdexs []int
 		ul     = len(uchars)
 		n      = nf.root
 	)
 	for i := 0; i < ul; i++ {
-		if nf.checkExclude(uchars[i], excludes...) {
-			continue
-		}
-
 		if _, ok := n.child[uchars[i]]; !ok {
 			continue
 		}
+
 		n = n.child[uchars[i]]
 		tIdexs = append(tIdexs, i)
 		if n.end {
 			idexs = nf.appendTo(idexs, tIdexs)
 			tIdexs = nil
 		}
+
+
 		for j := i + 1; j < ul; j++ {
-			if nf.checkExclude(uchars[j], excludes...) {
-				tIdexs = append(tIdexs, j)
-			} else {
-				if _, ok := n.child[uchars[j]]; !ok {
-					break
-				}
-				n = n.child[uchars[j]]
-				tIdexs = append(tIdexs, j)
-				if n.end {
-					idexs = nf.appendTo(idexs, tIdexs)
-				}
+
+			//匹配上字典树 但是有阻隔的字符  忽略掉
+			if _, ok := intrusion[uchars[j]]; ok {
+				continue
+			}
+
+			if _, ok := n.child[uchars[j]]; !ok {
+				break
+			}
+
+			n = n.child[uchars[j]]
+			tIdexs = append(tIdexs, j)
+			if n.end {
+				idexs = nf.appendTo(idexs, tIdexs)
 			}
 		}
 		if tIdexs != nil {
